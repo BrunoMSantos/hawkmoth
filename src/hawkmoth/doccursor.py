@@ -53,8 +53,16 @@ class DocCursor:
         else:
             self._comment = None
 
+        self._cache_store = {}
+
     def __hash__(self):
         return self._cc.hash
+
+    def _cache(self, func, *args):
+        key = hash(func) ^ hash(args)
+        if key not in self._cache_store:
+            self._cache_store[key] = func(*args)
+        return self._cache_store[key]
 
     @property
     def meta(self):
@@ -88,14 +96,14 @@ class DocCursor:
     @property
     def decl_name(self):
         if self._cc.kind in [CursorKind.VAR_DECL, CursorKind.FIELD_DECL]:
-            return self._var_type_fixup(self)[1]
+            return self._cache(self._var_type_fixup, self)[1]
         if self._cc.kind in [CursorKind.STRUCT_DECL,
                              CursorKind.UNION_DECL,
                              CursorKind.ENUM_DECL,
                              CursorKind.CLASS_DECL,
                              CursorKind.CLASS_TEMPLATE,
                              CursorKind.TYPE_ALIAS_TEMPLATE_DECL]:
-            return self._type_definition_fixup()
+            return self._cache(self._type_definition_fixup)
         else:
             # self.name would recurse back here if self._cc.spelling is None
             return self.namespace_prefix + self._cc.spelling if self._cc.spelling else None
@@ -110,14 +118,14 @@ class DocCursor:
     @property
     def type(self):
         if self._cc.kind in [CursorKind.VAR_DECL, CursorKind.FIELD_DECL]:
-            return self._var_type_fixup(self)[0]
+            return self._cache(self._var_type_fixup, self)[0]
         if self._cc.kind == CursorKind.FUNCTION_DECL:
-            return self._function_fixup()
+            return self._cache(self._function_fixup)
         if self._cc.kind in [CursorKind.CONSTRUCTOR,
                              CursorKind.DESTRUCTOR,
                              CursorKind.CXX_METHOD,
                              CursorKind.FUNCTION_TEMPLATE]:
-            return self._method_fixup()
+            return self._cache(self._method_fixup)
         else:
             return self._cc.type.spelling
 
@@ -128,13 +136,13 @@ class DocCursor:
     @property
     def args(self):
         if self._cc.kind == CursorKind.MACRO_DEFINITION:
-            return self._get_macro_args()
+            return self._cache(self._get_macro_args)
         if self._cc.kind in [CursorKind.FUNCTION_DECL,
                              CursorKind.CONSTRUCTOR,
                              CursorKind.DESTRUCTOR,
                              CursorKind.CXX_METHOD,
                              CursorKind.FUNCTION_TEMPLATE]:
-            return self._get_fn_args()
+            return self._cache(self._get_fn_args)
         else:
             return None
 
@@ -146,7 +154,8 @@ class DocCursor:
                              CursorKind.DESTRUCTOR,
                              CursorKind.CXX_METHOD,
                              CursorKind.FUNCTION_TEMPLATE]:
-            return ' '.join(self._get_method_quals()[1])
+            gen = lambda: ' '.join(self._cache(self._get_method_quals)[1])
+            return self._cache(gen)
         else:
             return None
 
