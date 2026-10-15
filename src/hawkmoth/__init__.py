@@ -11,6 +11,7 @@ Sphinx C Domain autodoc directive extension.
 import glob
 import os
 
+import sphinx
 from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
@@ -260,6 +261,53 @@ class _AutoNamedDirective(_AutoBaseDirective):
         return [self.arguments[0]]
 
 
+# Base class for C/C++ symbols.
+class _AutoSymbolDirective(_AutoNamedDirective):
+    @staticmethod
+    def _get_option_name(history, version):
+        for since, impl in history:
+            if version >= since:
+                return impl
+        return None
+
+    _passthrough_options = {
+        'no-index-entry': (
+            _get_option_name(
+                [((3, 2), 'noindexentry'), ((7, 2), 'no-index-entry')],
+                sphinx.version_info,
+            ),
+            directives.flag,
+        ),
+        'no-contents-entry': (
+            _get_option_name(
+                [((5, 2), 'nocontentsentry'), ((7, 2), 'no-contents-entry')],
+                sphinx.version_info,
+            ),
+            directives.flag,
+        ),
+    }
+
+    option_spec = _AutoNamedDirective.option_spec.copy()
+    option_spec.update(
+        {option: converter for option, (_, converter) in _passthrough_options.items()}
+    )
+
+    def get_directive_options(self):
+        lines = []
+        for option, (spelling, _) in self._passthrough_options.items():
+            if option not in self.options:
+                continue
+
+            # Flags have None, and converters may return lists of arguments
+            value = self.options[option]
+            if isinstance(value, list):
+                value = ', '.join(value)
+
+            lines.append(f':{spelling}: {value}' if value else f':{spelling}:')
+
+        return lines
+
+
 def _members_filter(argument):
     # Use None for members option without an argument to not filter.
     if argument is None:
@@ -267,8 +315,8 @@ def _members_filter(argument):
     return strutil.string_list(argument)
 
 
-class _AutoCompoundDirective(_AutoNamedDirective):
-    option_spec = _AutoNamedDirective.option_spec.copy()
+class _AutoCompoundDirective(_AutoSymbolDirective):
+    option_spec = _AutoSymbolDirective.option_spec.copy()
     option_spec.update(
         {
             'members': _members_filter,
@@ -291,22 +339,22 @@ class CAutoSectionDirective(_AutoNamedDirective):
     _docstring_types = [docstring.TextDocstring]
 
 
-class CAutoVarDirective(_AutoNamedDirective):
+class CAutoVarDirective(_AutoSymbolDirective):
     _domain = 'c'
     _docstring_types = [docstring.VarDocstring]
 
 
-class CAutoTypeDirective(_AutoNamedDirective):
+class CAutoTypeDirective(_AutoSymbolDirective):
     _domain = 'c'
     _docstring_types = [docstring.TypedefDocstring, docstring.TypedefFunctionDocstring]
 
 
-class CAutoMacroDirective(_AutoNamedDirective):
+class CAutoMacroDirective(_AutoSymbolDirective):
     _domain = 'c'
     _docstring_types = [docstring.MacroDocstring, docstring.MacroFunctionDocstring]
 
 
-class CAutoFunctionDirective(_AutoNamedDirective):
+class CAutoFunctionDirective(_AutoSymbolDirective):
     _domain = 'c'
     _docstring_types = [docstring.FunctionDocstring]
 
@@ -337,12 +385,12 @@ class CppAutoSectionDirective(_AutoNamedDirective):
     _docstring_types = [docstring.TextDocstring]
 
 
-class CppAutoVarDirective(_AutoNamedDirective):
+class CppAutoVarDirective(_AutoSymbolDirective):
     _domain = 'cpp'
     _docstring_types = [docstring.VarDocstring]
 
 
-class CppAutoTypeDirective(_AutoNamedDirective):
+class CppAutoTypeDirective(_AutoSymbolDirective):
     _domain = 'cpp'
     _docstring_types = [
         docstring.TypedefDocstring,
@@ -351,12 +399,12 @@ class CppAutoTypeDirective(_AutoNamedDirective):
     ]
 
 
-class CppAutoMacroDirective(_AutoNamedDirective):
+class CppAutoMacroDirective(_AutoSymbolDirective):
     _domain = 'cpp'
     _docstring_types = [docstring.MacroDocstring, docstring.MacroFunctionDocstring]
 
 
-class CppAutoFunctionDirective(_AutoNamedDirective):
+class CppAutoFunctionDirective(_AutoSymbolDirective):
     _domain = 'cpp'
     _docstring_types = [docstring.FunctionDocstring]
 
