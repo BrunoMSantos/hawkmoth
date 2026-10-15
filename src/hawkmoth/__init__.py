@@ -236,7 +236,7 @@ class _AutoDocDirective(_AutoBaseDirective):
 
 
 # Base class for named stuff
-class _AutoSymbolDirective(_AutoBaseDirective):
+class _AutoNamedDirective(_AutoBaseDirective):
     """Extract specified documentation comments from the specified file"""
 
     required_arguments = 1
@@ -267,8 +267,8 @@ def _members_filter(argument):
     return strutil.string_list(argument)
 
 
-class _AutoCompoundDirective(_AutoSymbolDirective):
-    option_spec = _AutoSymbolDirective.option_spec.copy()
+class _AutoCompoundDirective(_AutoNamedDirective):
+    option_spec = _AutoNamedDirective.option_spec.copy()
     option_spec.update(
         {
             'members': _members_filter,
@@ -284,29 +284,29 @@ class CAutoDocDirective(_AutoDocDirective):
     _domain = 'c'
 
 
-class CAutoSectionDirective(_AutoSymbolDirective):
+class CAutoSectionDirective(_AutoNamedDirective):
     # Allow spaces in the directive argument (the name)
     final_argument_whitespace = True
     _domain = 'c'
     _docstring_types = [docstring.TextDocstring]
 
 
-class CAutoVarDirective(_AutoSymbolDirective):
+class CAutoVarDirective(_AutoNamedDirective):
     _domain = 'c'
     _docstring_types = [docstring.VarDocstring]
 
 
-class CAutoTypeDirective(_AutoSymbolDirective):
+class CAutoTypeDirective(_AutoNamedDirective):
     _domain = 'c'
     _docstring_types = [docstring.TypedefDocstring, docstring.TypedefFunctionDocstring]
 
 
-class CAutoMacroDirective(_AutoSymbolDirective):
+class CAutoMacroDirective(_AutoNamedDirective):
     _domain = 'c'
     _docstring_types = [docstring.MacroDocstring, docstring.MacroFunctionDocstring]
 
 
-class CAutoFunctionDirective(_AutoSymbolDirective):
+class CAutoFunctionDirective(_AutoNamedDirective):
     _domain = 'c'
     _docstring_types = [docstring.FunctionDocstring]
 
@@ -330,19 +330,19 @@ class CppAutoDocDirective(_AutoDocDirective):
     _domain = 'cpp'
 
 
-class CppAutoSectionDirective(_AutoSymbolDirective):
+class CppAutoSectionDirective(_AutoNamedDirective):
     # Allow spaces in the directive argument (the name)
     final_argument_whitespace = True
     _domain = 'cpp'
     _docstring_types = [docstring.TextDocstring]
 
 
-class CppAutoVarDirective(_AutoSymbolDirective):
+class CppAutoVarDirective(_AutoNamedDirective):
     _domain = 'cpp'
     _docstring_types = [docstring.VarDocstring]
 
 
-class CppAutoTypeDirective(_AutoSymbolDirective):
+class CppAutoTypeDirective(_AutoNamedDirective):
     _domain = 'cpp'
     _docstring_types = [
         docstring.TypedefDocstring,
@@ -351,12 +351,12 @@ class CppAutoTypeDirective(_AutoSymbolDirective):
     ]
 
 
-class CppAutoMacroDirective(_AutoSymbolDirective):
+class CppAutoMacroDirective(_AutoNamedDirective):
     _domain = 'cpp'
     _docstring_types = [docstring.MacroDocstring, docstring.MacroFunctionDocstring]
 
 
-class CppAutoFunctionDirective(_AutoSymbolDirective):
+class CppAutoFunctionDirective(_AutoNamedDirective):
     _domain = 'cpp'
     _docstring_types = [docstring.FunctionDocstring]
 
